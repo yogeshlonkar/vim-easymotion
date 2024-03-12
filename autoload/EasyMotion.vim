@@ -433,20 +433,23 @@ endfunction " }}}
 " -- Message -----------------------------
 function! s:Message(message) " {{{
     if g:EasyMotion_verbose
-        echo 'EasyMotion: ' . a:message
-    else
+        call luaeval("vim.notify(' EasyMotion: ' .. _A[1], vim.log.levels.DEBUG)", [a:message])
+        " echo 'EasyMotion: ' . a:message
+    " else
         " Make the current message disappear
-        echo ''
+        " echo ''
         " redraw
     endif
 endfunction " }}}
 function! s:Prompt(message) " {{{
-    echohl Question
-    echo a:message . ': '
-    echohl None
+    call luaeval("vim.notify(' EasyMotion: ' .. _A[1], vim.log.levels.DEBUG)", [a:message])
+    " echohl Question
+    " echo a:message . ': '
+    " echohl None
 endfunction " }}}
 function! s:Throw(message) "{{{
-    throw 'EasyMotion: ' . a:message
+    call luaeval("vim.notify(' EasyMotion: ' .. _A[1], vim.log.levels.ERROR)", [a:message])
+    " throw 'EasyMotion: ' . a:message
 endfunction "}}}
 
 " -- Save & Restore values ---------------
@@ -1196,10 +1199,12 @@ function! s:DotPromptUser(groups) "{{{
 endfunction "}}}
 
 function! s:EasyMotion(regexp, direction, visualmode, is_inclusive, ...) " {{{
+    call luaeval("EasymotionSegmentActivate(_A[1])", [a:direction])
     let config = extend(s:default_config(), get(a:, 1, {}))
     " Store s:current original_position & cursor_position {{{
     " current cursor pos.
     let s:current.cursor_position = [line('.'), col('.')]
+    let og_pos = [line('.'), col('.')]
     " original start position.  This value could be changed later in visual
     " mode
     let s:current.original_position =
@@ -1556,6 +1561,7 @@ function! s:EasyMotion(regexp, direction, visualmode, is_inclusive, ...) " {{{
         call s:Message('Jumping to [' . coords[0] . ', ' . coords[1] . ']')
         let s:EasyMotion_is_cancelled = 0 " Success
         "}}}
+         call luaeval("EasymotionSegmentDeactivate(_A[1], _A[2])", [og_pos, coords])
     catch /^EasyMotion:.*/
         redraw
 
@@ -1572,10 +1578,12 @@ function! s:EasyMotion(regexp, direction, visualmode, is_inclusive, ...) " {{{
 
         call s:restore_cursor_state(a:visualmode)
         let s:EasyMotion_is_cancelled = 1 " Cancel
+        call luaeval("EasymotionSegmentDeactivate(_A[1], nil)", [og_pos])
     catch
         call s:Message(v:exception . ' : ' . v:throwpoint)
         call s:restore_cursor_state(a:visualmode)
         let s:EasyMotion_is_cancelled = 1 " Cancel
+        call luaeval("EasymotionSegmentDeactivate(_A[1], nil)", [og_pos])
     finally
         " -- Restore properties ------------------ {{{
         call s:RestoreValue()
